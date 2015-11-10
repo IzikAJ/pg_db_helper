@@ -1,0 +1,40 @@
+db_yml_file:    "config/database.yml"
+db_sample_file: "config/database.yml.sample"
+dump_store:     "~/www/db/"
+
+default_db:
+  database: nil
+  host:     "localhost"
+  port:     "5432"
+  username: "dev"
+  password: "pass"
+
+
+default_database_yml:
+  development:
+    adapter:  "postgresql"
+    encoding: "unicode"
+    database: nil
+    host:     "localhost"
+    port:     "5432"
+    pool:     5
+    username: "dev"
+    password: "pass"
+  test:
+    adapter:  "postgresql"
+    encoding: "unicode"
+    database: nil
+    host:     "localhost"
+    port:     "5432"
+    pool:     5
+    username: "dev"
+    password: "pass"
+  production:
+    adapter:  "postgresql"
+    encoding: "unicode"
+    database: nil
+    host:     "localhost"
+    port:     "5432"
+    pool:     5
+    username: "dev"
+    password: "pass"
