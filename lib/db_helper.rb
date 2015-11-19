@@ -14,6 +14,7 @@ class DbHelper
       FileUtils.cp(File.join(@sysdir, 'config.yml.sample'), File.join(@sysdir, 'config.yml'))
       p "Please correct your config file at:"
       p "#{File.join(@sysdir, 'config.yml')}"
+      exit
     end
 
     @config = get_hash_file File.join(@sysdir, 'config.yml')
