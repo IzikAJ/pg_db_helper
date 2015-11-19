@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 require_relative 'db_helper'
 
 class DbDump < DbHelper
@@ -32,12 +33,10 @@ class DbDump < DbHelper
     end
 
     opt_parser.parse!(args)
-    get_configs(options)
+    get_configs()
     dump!(options)
 
     # pp options
-    options
   end
 end
-
-DbDump.run(ARGV)
+# DbDump.run(ARGV)

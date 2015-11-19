@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require_relative File.join(%w[.. lib fork.rb])
+
+DbFork.run(ARGV)

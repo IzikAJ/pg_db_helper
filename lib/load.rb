@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 require_relative 'db_helper'
 
 class DbLoad < DbHelper
@@ -38,12 +39,11 @@ class DbLoad < DbHelper
     end
 
     opt_parser.parse!(args)
-    get_configs(options)
+    get_configs()
     load!(options)
 
     # pp options
-    options
   end
 end
 
-DbLoad.run(ARGV)
+# DbLoad.run(ARGV)

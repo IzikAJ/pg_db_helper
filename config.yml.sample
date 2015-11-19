@@ -8,33 +8,3 @@ default_db:
   port:     "5432"
   username: "dev"
   password: "pass"
-
-
-default_database_yml:
-  development:
-    adapter:  "postgresql"
-    encoding: "unicode"
-    database: nil
-    host:     "localhost"
-    port:     "5432"
-    pool:     5
-    username: "dev"
-    password: "pass"
-  test:
-    adapter:  "postgresql"
-    encoding: "unicode"
-    database: nil
-    host:     "localhost"
-    port:     "5432"
-    pool:     5
-    username: "dev"
-    password: "pass"
-  production:
-    adapter:  "postgresql"
-    encoding: "unicode"
-    database: nil
-    host:     "localhost"
-    port:     "5432"
-    pool:     5
-    username: "dev"
-    password: "pass"

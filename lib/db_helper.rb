@@ -1,71 +1,112 @@
-# Usage
-# 
-
 require 'rubygems'
 require 'fileutils'
-require 'micro-optparse'
 require 'optparse'
-require_relative 'config_worker'
 require 'yaml'
 require 'pp'
-
-@db_yml_file = "config/database.yml"
-@db_sample_file = "config/database.yml.sample"
-
-@dump_store = '~/www/db/'
-@working_dir = Dir.pwd
-# p File.expand_path(File.dirname(__FILE__))
-# p File.expand_path('.')
-# p Dir.pwd
+require_relative 'config_worker'
 
 class DbHelper
-  def self.run(args=[])
-    options = {}
-    opt_parser = OptionParser.new do |opts|
-      opts.banner = "Usage: example.rb [options]"
+  def self.get_configs()
+    @working_dir = Dir.pwd
+    @sysdir = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+    unless File.exists?(File.join(@sysdir, 'config.yml'))
+      p "No config file. Creating default one."
+      FileUtils.cp(File.join(@sysdir, 'config.yml.sample'), File.join(@sysdir, 'config.yml'))
+      p "Please correct your config file at:"
+      p "#{File.join(@sysdir, 'config.yml')}"
+    end
 
-      opts.separator ""
-      opts.separator "Methods:"
-      opts.separator ""
-      opts.separator "Specific options:"
+    @config = get_hash_file File.join(@sysdir, 'config.yml')
 
-      opts.on("-l", "--load", "Loads from db") do |arg|
-        p "LOAD!!!!!!!!"
-        pp arg
+    @db_yml_file = @config[:db_yml_file]
+    @db_sample_file = @config[:db_sample_file]
+    @dump_store = @config[:dump_store]
+
+    @db_config = get_hash_file File.join(@working_dir, @db_yml_file)
+    # pp @config
+    # pp @db_config
+  end
+
+  def self.save_db_config!()
+    put_hash_file File.join(@working_dir, @db_yml_file), @db_config
+  end
+
+  def self.dump!(options={})
+    @db_config.keys.each do |env|
+      if ((options[:branch]==:all) || env.to_s.start_with?(options[:branch].to_s))
+        param = @db_config[env]
+        dumpname = options[:file]
+        dumpname = File.join([@dump_store, dumpname]) unless options[:relative]
+        p "dump <#{env}> to file: #{dumpname}"
+        # pp param
+        system "
+          PGPASSWORD='#{param[:password]}'
+          pg_dump -U #{param[:username]} -h #{param[:host]} #{param[:database]} > #{dumpname}
+          "
       end
+    end
+  end
 
-      # Mandatory argument.
-      opts.on("-d", "--dodo [item]",
-              "sadasd executing your script") do |arg|
-        p "dodod"
-        pp arg
-      end
+  def self.fork!(options={})
+    dumps = {}
+    @db_config.keys.each do |env|
+      if ((options[:branch]==:all) || env.to_s.start_with?(options[:branch].to_s))
+        param = @db_config[env]
+        timestamp = Time.now.strftime('%Y%m%dT%H%M%S%z')
+        dumps[env] = File.join([@dump_store, "#{param[:database]}_#{timestamp}.sql"])
+        p "dump <#{env}> to file: #{dumps[env]}"
+        # pp param
+        system "
+          PGPASSWORD='#{param[:password]}'
+          pg_dump -U #{param[:username]} -h #{param[:host]} #{param[:database]} > #{dumps[env]}
+          "
+        new_db_name = options[:name] + param[:database].gsub(/.+?(_db)?(_test)?(_db)?/i, '\1\2\3')
+        @db_config[env][:database] = new_db_name
 
-      # Mandatory argument.
-      opts.on("-r", "--require [item]",
-              "Require the LIBRARY before executing your script") do |arg|
-        pp arg
-      end
-
-
-      # No argument, shows at tail.  This will print an options summary.
-      # Try it and see!
-      opts.on_tail("-h", "--help", "Show this message") do
-        puts opts
-        exit
       end
     end
 
-    opt_parser.parse!(args)
+    p "All backups created!"
+    save_db_config!
 
-    pp options
-
-    options
+    @db_config.keys.each do |env|
+      if ((options[:branch]==:all) || env.to_s.start_with?(options[:branch].to_s))
+        param = @db_config[env]
+        p "load <#{env}> from file: #{dumps[env]}"
+        # pp param
+        system "RAILS_ENV=#{env} bundle exec rake db:drop"
+        system "RAILS_ENV=#{env} bundle exec rake db:create"
+        system "RAILS_ENV=#{env} bundle exec rake db:migrate"
+        system "
+          PGPASSWORD='#{param[:password]}'
+          psql -U #{param[:username]} -h #{param[:host]} #{param[:database]} < #{dumps[env]}
+          "
+      end
+    end    
   end
+
+  def self.load!(options={})
+    @db_config.keys.each do |env|
+      if ((options[:branch]==:all) || env.to_s.start_with?(options[:branch].to_s))
+        param = @db_config[env]
+        dumpname = options[:file]
+        dumpname = File.join([@dump_store, dumpname]) unless options[:relative]
+        p "load <#{env}> from file: #{dumpname}"
+        # pp param
+        if options[:clean]
+          system "bundle exec rake db:drop"
+          system "bundle exec rake db:create"
+          system "bundle exec rake db:migrate"
+        end
+        system "
+          PGPASSWORD='#{param[:password]}'
+          psql -U #{param[:username]} -h #{param[:host]} #{param[:database]} < #{dumpname}
+          "
+      end
+    end
+  end
+
 end
-
-DbHelper.run(ARGV)
-
 # @options = Parser.new do |p|
 #   p.banner = "This is a db helper, for usage see below"
 #   p.version = "db helper 0.0 alpha"
